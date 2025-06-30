@@ -40,7 +40,7 @@ const Signin = () => {
                             <label htmlFor="email" className="text-sm font-medium">
                                 Email
                             </label>
-                            <input
+                            <input autoComplete="off"
                                 {...register("email", { required: "Email is required" })}
                                 id="email"
                                 type="email"
@@ -55,7 +55,7 @@ const Signin = () => {
                             <label htmlFor="password" className="text-sm font-medium">
                                 Password
                             </label>
-                            <input
+                            <input autoComplete="off"
                                 {...register("password", { required: "Password is required" })}
                                 id="password"
                                 type="password"

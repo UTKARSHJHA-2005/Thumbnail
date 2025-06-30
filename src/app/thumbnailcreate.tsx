@@ -1,11 +1,46 @@
 "use client"
 import { useEffect, useRef, useState } from 'react';
-import Dropzone from './Dropzone';
-import { IoMdArrowBack } from "react-icons/io";
-import { removeBackground } from "@imgly/background-removal"
 import { inter, domine } from "../app/fonts"
-// import { getUrl } from './actions/aws';
-// import Recent from './recent';
+import { removeBackground } from "@imgly/background-removal"
+
+// Simple Dropzone component
+const Dropzone = ({ setSelectedImage }: { setSelectedImage: (file?: File) => void }) => {
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) setSelectedImage(file);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setSelectedImage(file);
+  };
+
+  return (
+    <div
+      className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${isDragging ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-blue-300'
+        }`}
+      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+      onDragLeave={() => setIsDragging(false)}
+      onDrop={handleDrop}
+      onClick={() => document.getElementById('fileInput')?.click()}
+    >
+      <div className="text-4xl mb-4">📁</div>
+      <p className="text-lg font-medium mb-2">Upload your image</p>
+      <p className="text-gray-500">Drag & drop or click to browse</p>
+      <input
+        id="fileInput"
+        type="file"
+        accept="image/*"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+    </div>
+  );
+};
 
 export default function ThumbnailCreate() {
   const [imagesrc, setimagesrc] = useState<string | null>(null);
@@ -13,6 +48,8 @@ export default function ThumbnailCreate() {
   const [processedimagesrc, setprocessedimagesrc] = useState<string | null>(null);
   const [canvasReady, setcanvasReady] = useState(false)
   const [text, setText] = useState("POV")
+  const [textColor, setTextColor] = useState("#000000");
+  const [isProcessing, setIsProcessing] = useState(false);
   const [Font, setFont] = useState<string>("Arial")
 
   const setSelectImage = (file?: File) => {
@@ -78,95 +115,141 @@ export default function ThumbnailCreate() {
       link.download = "image.jpg";
       link.href = canva.current.toDataURL();
       link.click();
-      // canva.current.toBlob(async (blob) => {
-      //   if (blob) {
-      //     try {
-      //       const upload = await getUrl()
-      //       fetch(upload, {
-      //         method: "POST",
-      //         body: blob,
-      //         headers: {
-      //           "Content-Type": "application/json"
-      //         },
-      //       })
-      //       console.log("File Uploaded")
-      //     } catch (error) {
-      //       console.log(error)
-      //     }
-      //   }
-      // }, "image/jpeg")
     }
   }
+
   useEffect(() => {
     if (canvasReady) {
       drawcomposite()
     }
   }, [canvasReady])
+
+  const resetApp = () => {
+    setimagesrc(null);
+    setprocessedimagesrc(null);
+    setIsProcessing(false);
+  };
+
   return (
-    <>
-      {imagesrc ? (
-        <div className="my-4 flex w-full flex-col items-center gap-3">
-          <button
-            onClick={async () => {
-              setimagesrc(null);
-              setprocessedimagesrc(null);
-              setcanvasReady(false);
-            }} className="flex items-center gap-2 cursor-pointer self-start">
-            <IoMdArrowBack className="h-4 w-4" />
-            <p className="leading-7">Go back</p>
-          </button>
-          <canvas
-            ref={canva}
-            className="max-h-lg h-auto w-full max-w-lg rounded-lg"
-          ></canvas>
-          <div className="w-full border rounded-lg shadow p-4">
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold">Edit</h2>
-            </div>
-            <div className="grid w-full items-center gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="text" className="text-sm font-medium">Text</label>
-                <input
-                  id="text"
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  placeholder="Text in thumbnail"
-                  className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-6">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">
+            ✨ Thumbnail Creator
+          </h1>
+          <p className="text-gray-600">Create amazing thumbnails in seconds</p>
+        </div>
+
+        {imagesrc ? (
+          <div className="space-y-6">
+            {/* Back Button */}
+            <button
+              onClick={resetApp}
+              className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow hover:shadow-md transition-shadow"
+            >
+              ← Back
+            </button>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Canvas Preview */}
+              <div className="bg-white rounded-lg p-6 shadow-lg">
+                <h3 className="text-lg font-semibold mb-4">Preview</h3>
+                {isProcessing ? (
+                  <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                      <p>Processing image...</p>
+                    </div>
+                  </div>
+                ) : (
+                  <canvas
+                    ref={canva}
+                    className="w-full max-w-md mx-auto rounded-lg shadow"
+                  />
+                )}
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="font" className="text-sm font-medium">Font</label>
-                <select id="font" value={Font} onChange={(e) => setFont(e.target.value)} className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="arial">Arial</option>
-                  <option value="inter">Inter</option>
-                  <option value="domine">Domine</option>
-                </select>
+
+              {/* Controls */}
+              <div className="bg-white rounded-lg p-6 shadow-lg">
+                <h3 className="text-lg font-semibold mb-4">Customize</h3>
+
+                <div className="space-y-4">
+                  {/* Text Input */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Text</label>
+                    <input
+                      type="text"
+                      value={text}
+                      onChange={(e) => setText(e.target.value)}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter your text"
+                    />
+                  </div>
+
+                  {/* Font Select */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Font</label>
+                    <select
+                      value={Font}
+                      onChange={(e) => setFont(e.target.value)}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="arial">Arial</option>
+                      <option value="inter">Inter</option>
+                      <option value="domine">Domine</option>
+                    </select>
+                  </div>
+
+                  {/* Color Picker */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Text Color</label>
+                    <input
+                      type="color"
+                      value={textColor}
+                      onChange={(e) => setTextColor(e.target.value)}
+                      className="w-full h-10 border rounded-lg cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      onClick={drawcomposite}
+                      className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
+                    >
+                      🔄 Update
+                    </button>
+                    <button
+                      onClick={handledownload}
+                      className="flex-1 bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition-colors"
+                    >
+                      📥 Download
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="flex flex-wrap justify-between gap-2 mt-4">
-              <button className='mt-4 bg-red-700 text-blue-50 w-xl h-xl p-2 cursor-pointer rounded-lg'
-                onClick={() => handledownload()}>
-                Download
-              </button>
-              <button
-                onClick={drawcomposite}
-                className="bg-gray-800 text-white rounded py-2 px-4 text-sm hover:bg-gray-900 transition">
-                Update
-              </button>
             </div>
           </div>
-        </div>
-      ) : (
-        <div>
-          <p>Want to create One?</p>
-          {/* <img src="" alt="" />
-          <img src="" alt="" />
-          <img src="" alt="" /> */}
-          <Dropzone setSelectedImage={setSelectImage} />
-          {/* <Recent/> */}
-        </div >
-      )
-      }
-    </>
+        ) : (
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white rounded-lg p-8 shadow-lg">
+              <h2 className="text-2xl font-bold text-center mb-6">
+                🚀 Let's create something amazing!
+              </h2>
+              <Dropzone setSelectedImage={setSelectImage} />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
+
+function setImageSrc(arg0: null) {
+  throw new Error('Function not implemented.');
+}
+function setIsProcessing(arg0: boolean) {
+  throw new Error('Function not implemented.');
+}
+
